@@ -52,17 +52,29 @@ class AJAX_Optimizer {
 	 */
 	public function options() {
 		if ( ! isset( $this->options ) ) {
-			$this->options = get_option( AJAX_OPT_SLUG, array() );
+			$this->options = (array) get_option( AJAX_OPT_SLUG, array() );
 		}
 
 		return $this->options;
 	}
 
 	/**
-	 * On activation.
+	 * Update plugin options.
+	 *
+	 * @param array $options
 	 */
-	public function activation() {
-		AJAX_Optimizer_MU_Admin::get_instance()->create_mu_plugin_on_activation();
+	public function update_options( array $options ) {
+		$this->options = $options;
+		update_option( AJAX_OPT_SLUG, $options );
 	}
 
+	/**
+	 * Single site or network wide activation.
+	 *
+	 * @param bool $network_wide Whether to enable the plugin for all sites in the network
+	 *                           or just the current site. Multisite only. Default is false.
+	 */
+	public static function activation( $network_wide ) {
+		AJAX_Optimizer_MU_Admin::get_instance()->create_mu_plugin_on_activation();
+	}
 }

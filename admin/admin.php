@@ -32,6 +32,7 @@ class AJAX_Optimizer_Admin {
 		add_action( 'admin_menu', array( $this, 'add_menu_page' ) );
 		// Settings page.
 		add_action( 'admin_init', array( $this, 'settings_init' ) );
+		// Add assets.
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
 	}
 
@@ -53,12 +54,10 @@ class AJAX_Optimizer_Admin {
 	 * Register admin pages.
 	 */
 	public function add_menu_page() {
-		if ( is_super_admin() ) {
-			$this->plugin_screen_hook_suffix = add_plugins_page( __( 'AJAX Optimizer', 'ajax-optimizer' ), __( 'AJAX Optimizer', 'ajax-optimizer' ), 'activate_plugins', AJAX_OPT_SLUG, array(
-				$this,
-				'render_menu_page',
-			) );
-		}
+		$this->plugin_screen_hook_suffix = add_plugins_page( __( 'AJAX Optimizer', 'ajax-optimizer' ), __( 'AJAX Optimizer', 'ajax-optimizer' ), 'activate_plugins', AJAX_OPT_SLUG, array(
+			$this,
+			'render_menu_page',
+		) );
 	}
 
 	/**
@@ -80,7 +79,7 @@ class AJAX_Optimizer_Admin {
 		// Register settings.
 		register_setting( AJAX_OPT_SLUG, AJAX_OPT_SLUG, array( $this, 'sanitize_settings' ) );
 
-		// General settings section.
+		// Must Use plugin settings section.
 		add_settings_section(
 			'plugin_conflicts_setting_section',
 			__( 'Must Use plugin', 'ajax-optimizer' ),
@@ -113,6 +112,7 @@ class AJAX_Optimizer_Admin {
 	public function render_settings_create_must_use_plugin() {
 		$exists = AJAX_Optimizer_MU_Admin::get_instance()->check_plugin_exists();
 		$status = $exists ? esc_html__( 'Exists', 'ajax-optimizer' ) : esc_html__( 'Does not exist', 'ajax-optimizer' );
+		$can_create = is_super_admin() && is_main_site();
 
 		require_once AJAX_OPT_BASE_PATH . 'admin/views/setting-create-mu-plugin.php';
 	}
@@ -130,6 +130,7 @@ class AJAX_Optimizer_Admin {
 		}
 
 		$all_plugins = get_plugins();
+		unset( $all_plugins[ AJAX_OPT_BASE_NANE ] );
 
 		// Load the template.
 		require_once AJAX_OPT_BASE_PATH . 'admin/views/settings-plugins.php';

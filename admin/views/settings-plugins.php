@@ -12,10 +12,6 @@ if ( is_array( $all_plugins ) && count( $all_plugins ) ) : ?>
 		<tbody>
 		<?php
 		foreach ( $all_plugins as $_plugin_path => $_plugin ) :
-			if ( ! is_plugin_active( $_plugin_path ) ) {
-				continue;
-			}
-
 			$status = ( isset( $plugins[ $_plugin_path ] ) && 'inactive' === $plugins[ $_plugin_path ] ) ? 'inactive' : 'active';
 			?>
 			<tr class="<?php echo $status; ?>">

@@ -2,7 +2,7 @@
 /**
  * Plugin Name:     AJAX Optimizer Must Use
  * Description:     Disables selected plugins in AJAX requests initiated by the frontend
- * Version:         0.1.0
+ * Version:         0.2.0
  * Author:          Thomas Maier
  * Author URI:      http://webgilde.com
  * License:         GPL-2.0+
@@ -11,7 +11,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'AJAX_OPTIMIZER_MU_VERSION', '0.1.0' );
+define( 'AJAX_OPTIMIZER_MU_VERSION', '0.2.0' );
 
 /**
  * Plugin filter.
@@ -21,8 +21,25 @@ class AJAX_Optimizer_MU_Plugin {
 	 * Constructor.
 	 */
 	public function __construct() {
-		add_filter( 'option_active_plugins', array( $this, 'exclude_plugins' ) );
-		add_filter( 'site_option_active_sitewide_plugins', array( $this, 'exclude_plugins' ) );
+		if ( $this->is_plugin_active() ) {
+			add_filter( 'option_active_plugins', array( $this, 'exclude_plugins' ) );
+			add_filter( 'site_option_active_sitewide_plugins', array( $this, 'exclude_plugins' ) );
+		}
+	}
+
+	/**
+	 * Check if Ajax Optimizer plugin is active (single site or network wide).
+	 *
+	 * @return bool
+	 */
+	private function is_plugin_active() {
+		$plugin = 'ajax-optimizer/ajax-optimizer.php';
+
+		if ( ! function_exists( 'is_plugin_inactive' ) ) {
+			require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+		}
+
+		return is_plugin_active( $plugin );
 	}
 
 	/**
@@ -38,13 +55,14 @@ class AJAX_Optimizer_MU_Plugin {
 
 		if ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) {
 			return $plugins;
-		}		
+		}
+
 
 		if ( ! $this->is_frontend_request() ) {
 			return $plugins;
 		}
 
-		$options = get_option( 'ajax-optimizer' );
+		$options = (array) get_option( 'ajax-optimizer', array() );
 		if ( ! isset( $options['plugins']['frontend'] ) || ! is_array( $options['plugins']['frontend'] ) ) {
 			return $plugins;
 		}
