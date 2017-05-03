@@ -17,8 +17,8 @@ defined( 'ABSPATH' ) || exit;
 define( 'AJAX_OPT_BASE_PATH', plugin_dir_path( __FILE__ ) );
 define( 'AJAX_OPT_BASE_URL', plugin_dir_url( __FILE__ ) );
 define( 'AJAX_OPT_SLUG', 'ajax-optimizer' );
-define( 'AJAX_OPT_BASE_NANE', plugin_basename( __FILE__ ) );
-define( 'AJAX_OPT_BASE_DIR', dirname( AJAX_OPT_BASE_NANE ) );
+define( 'AJAX_OPT_BASE_NAME', plugin_basename( __FILE__ ) );
+define( 'AJAX_OPT_BASE_DIR', dirname( AJAX_OPT_BASE_NAME ) );
 define( 'AJAX_OPT_VERSION', '0.2.0' );
 
 require_once AJAX_OPT_BASE_PATH . 'plugin.php';

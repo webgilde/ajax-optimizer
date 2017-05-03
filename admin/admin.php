@@ -130,7 +130,7 @@ class AJAX_Optimizer_Admin {
 		}
 
 		$all_plugins = get_plugins();
-		unset( $all_plugins[ AJAX_OPT_BASE_NANE ] );
+		unset( $all_plugins[ AJAX_OPT_BASE_NAME ] );
 
 		// Load the template.
 		require_once AJAX_OPT_BASE_PATH . 'admin/views/settings-plugins.php';
