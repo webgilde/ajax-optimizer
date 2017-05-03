@@ -11,6 +11,8 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' )
 
 require_once plugin_dir_path( __FILE__ ) . 'classes/mu-admin.php';
 require_once plugin_dir_path( __FILE__ ) . 'classes/utils.php';
+require_once plugin_dir_path( __FILE__ ).  'classes/filesystem.php';
+
 AJAX_Optimizer_MU_Admin::get_instance()->delete_mu_plugin_on_uninstall();
 
 function ajax_opt_uninstall_single() {
