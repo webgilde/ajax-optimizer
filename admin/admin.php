@@ -123,8 +123,8 @@ class AJAX_Optimizer_Admin {
 	public function render_settings_plugins() {
 		$options = $this->plugin->options();
 
-		if ( isset( $options['plugins']['frontend'] ) && is_array( $options['plugins']['frontend'] ) ) {
-			$plugins = $options['plugins']['frontend'];
+		if ( isset( $options['plugins']['frontend']['default'] ) && is_array( $options['plugins']['frontend']['default'] ) ) {
+			$plugins = $options['plugins']['frontend']['default'];
 		} else {
 			$plugins = array();
 		}

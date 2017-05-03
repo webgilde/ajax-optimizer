@@ -17,7 +17,7 @@ if ( is_array( $all_plugins ) && count( $all_plugins ) ) : ?>
 			<tr class="<?php echo $status; ?>">
 				<th class="check-column"></th>
 				<td><?php echo $_plugin['Name']; ?></td>
-				<td><input type="checkbox" name="<?php echo AJAX_OPT_SLUG; ?>[plugins][frontend][<?php echo $_plugin_path; ?>]" value="inactive" <?php checked( $status, 'inactive' ); ?>></td>
+				<td><input type="checkbox" name="<?php echo AJAX_OPT_SLUG; ?>[plugins][frontend][default][<?php echo $_plugin_path; ?>]" value="inactive" <?php checked( $status, 'inactive' ); ?>></td>
 			</tr>
 		<?php endforeach; ?>
 		</tbody>

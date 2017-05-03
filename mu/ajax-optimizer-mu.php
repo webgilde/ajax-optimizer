@@ -63,21 +63,36 @@ class AJAX_Optimizer_MU_Plugin {
 		}
 
 		$options = (array) get_option( 'ajax-optimizer', array() );
+		
+		// get current action
+		$current_action = isset( $_REQUEST['action'] ) ? $_REQUEST['action'] : 'default';
+		
 		if ( ! isset( $options['plugins']['frontend'] ) || ! is_array( $options['plugins']['frontend'] ) ) {
 			return $plugins;
+		}
+		
+		// use "default" if current action has no own settings
+		if( !isset( $options['plugins']['frontend'][$current_action] ) || ! is_array( $options['plugins']['frontend'][$current_action] ) ){
+			if( isset( $options['plugins']['frontend']['default'] ) ){
+				$disabled_plugins = $options['plugins']['frontend']['default'];
+			} else {
+				return $plugins;
+			}
+		} else {
+			$disabled_plugins = $options['plugins']['frontend'][$current_action];
 		}
 
 		// Blog-active plugins.
 		if ( 'option_active_plugins' === current_filter() ) {
 			foreach ( $plugins as $_key => $_name ) {
-				if ( isset( $options['plugins']['frontend'][ $_name ] ) ) {
+				if ( isset( $disabled_plugins[ $_name ] ) ) {
 					unset( $plugins[ $_key ] );
 				}
 			}
 		} else {
 			// Network-active plugins.
 			foreach ( $plugins as $_name  => $timestamp ) {
-				if ( isset( $options['plugins']['frontend'][ $_name ] ) ) {
+				if ( isset( $disabled_plugins[ $_name ] ) ) {
 					unset( $plugins[ $_name ] );
 				}
 			}
