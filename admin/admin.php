@@ -82,7 +82,7 @@ class AJAX_Optimizer_Admin {
 		// Must Use plugin settings section.
 		add_settings_section(
 			'plugin_conflicts_setting_section',
-			__( 'Must Use plugin', 'ajax-optimizer' ),
+			__( 'Initiate AJAX Optimizer', 'ajax-optimizer' ),
 			array( $this, 'render_settings_create_must_use_plugin' ),
 			$hook
 		);
@@ -90,7 +90,7 @@ class AJAX_Optimizer_Admin {
 		// Choose plugins.
 		add_settings_section(
 			'plugins',
-			__( 'Choose Plugins', 'ajax-optimizer' ),
+			__( 'Disable Plugins', 'ajax-optimizer' ),
 			array( $this, 'render_settings_plugins' ),
 			$hook
 		);
@@ -111,7 +111,7 @@ class AJAX_Optimizer_Admin {
 	 */
 	public function render_settings_create_must_use_plugin() {
 		$exists = AJAX_Optimizer_MU_Admin::get_instance()->check_plugin_exists();
-		$status = $exists ? esc_html__( 'Exists', 'ajax-optimizer' ) : esc_html__( 'Does not exist', 'ajax-optimizer' );
+		$status = $exists ? esc_html__( 'AJAX Optimizer is activated', 'ajax-optimizer' ) : esc_html__( 'AJAX Optimizer is NOT activated', 'ajax-optimizer' );
 		$can_create = is_super_admin() && is_main_site();
 
 		require_once AJAX_OPT_BASE_PATH . 'admin/views/setting-create-mu-plugin.php';

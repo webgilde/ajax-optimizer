@@ -3,7 +3,7 @@ defined( 'ABSPATH' ) || exit;
 
 if ( is_array( $all_plugins ) && count( $all_plugins ) ) : ?>
 
-	<p class="description"><?php esc_html_e( 'Choose plugins that will be disabled on all AJAX calls in the frontend', 'ajax-optimizer' ); ?></p>
+	<p class="description"><?php esc_html_e( 'Choose the plugins which will be disabled for all AJAX calls in the frontend', 'ajax-optimizer' ); ?></p>
 
 	<table class="widefat plugins">
 		<thead>
@@ -26,5 +26,5 @@ if ( is_array( $all_plugins ) && count( $all_plugins ) ) : ?>
 		</tfoot>
 	</table>
 <?php else : ?>
-	<p class="description"><?php esc_html_e( 'Please activate at least one plugin', 'ajax-optimizer' ); ?></p>
+	<p class="description"><?php esc_html_e( 'There needs to be at least one plugin selected.', 'ajax-optimizer' ); ?></p>
 <?php endif; ?>
