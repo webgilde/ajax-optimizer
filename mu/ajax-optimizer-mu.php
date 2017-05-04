@@ -7,6 +7,12 @@
  * Author URI:      http://webgilde.com
  * License:         GPL-2.0+
  * License URI:     http://www.gnu.org/licenses/gpl-2.0.txt
+ * 
+ * This file belongs to the AJAX Optimizer plugin.
+ * You can remove it if you no longer use that plugin.
+ * 
+ * Find more information in wp-content/plugins/ajax-optimizer/readme.txt
+ * 
  */
 
 defined( 'ABSPATH' ) || exit;

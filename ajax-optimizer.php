@@ -2,7 +2,7 @@
 /**
  * Plugin Name:     AJAX Optimizer
  * Description:     Allows to disable selected plugins in AJAX requests initiated by the frontend
- * Version:         0.2.0
+ * Version:         0.2
  * Author:          Thomas Maier
  * Author URI:      http://webgilde.com
  * License:         GPL-2.0+
@@ -19,7 +19,7 @@ define( 'AJAX_OPT_BASE_URL', plugin_dir_url( __FILE__ ) );
 define( 'AJAX_OPT_SLUG', 'ajax-optimizer' );
 define( 'AJAX_OPT_BASE_NAME', plugin_basename( __FILE__ ) );
 define( 'AJAX_OPT_BASE_DIR', dirname( AJAX_OPT_BASE_NAME ) );
-define( 'AJAX_OPT_VERSION', '0.2.0' );
+define( 'AJAX_OPT_VERSION', '0.2' );
 
 require_once AJAX_OPT_BASE_PATH . 'plugin.php';
 require_once AJAX_OPT_BASE_PATH . 'classes/mu-admin.php';
