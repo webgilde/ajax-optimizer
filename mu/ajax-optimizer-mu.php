@@ -14,118 +14,143 @@
  * Find more information in wp-content/plugins/ajax-optimizer/readme.txt
  * 
  */
+defined('ABSPATH') || exit();
 
-defined( 'ABSPATH' ) || exit;
-
-define( 'AJAX_OPTIMIZER_MU_VERSION', '0.2.0' );
+define('AJAX_OPTIMIZER_MU_VERSION', '0.2.0');
 
 /**
  * Plugin filter.
  */
-class AJAX_Optimizer_MU_Plugin {
-	/**
-	 * Constructor.
-	 */
-	public function __construct() {
-		if ( $this->is_plugin_active() ) {
-			add_filter( 'option_active_plugins', array( $this, 'exclude_plugins' ) );
-			add_filter( 'site_option_active_sitewide_plugins', array( $this, 'exclude_plugins' ) );
-		}
-	}
+class AJAX_Optimizer_MU_Plugin
+{
+    private $buffered_results = array();
+    /**
+     * Constructor.
+     */
+    public function __construct()
+    {
+        if ($this->is_plugin_active()) {
+            add_filter('option_active_plugins', array(
+                $this,
+                'exclude_plugins'
+            ));
+            add_filter('site_option_active_sitewide_plugins', array(
+                $this,
+                'exclude_plugins'
+            ));
+        }
+    }
 
-	/**
-	 * Check if Ajax Optimizer plugin is active (single site or network wide).
-	 *
-	 * @return bool
-	 */
-	private function is_plugin_active() {
-		$plugin = 'ajax-optimizer/ajax-optimizer.php';
+    /**
+     * Check if Ajax Optimizer plugin is active (single site or network wide).
+     *
+     * @return bool
+     */
+    private function is_plugin_active()
+    {
+        $plugin = 'ajax-optimizer/ajax-optimizer.php';
+        
+        if (! function_exists('is_plugin_inactive')) {
+            require_once (ABSPATH . 'wp-admin/includes/plugin.php');
+        }
+        
+        return is_plugin_active($plugin);
+    }
+    
+    /**
+     * Exclude plugins.
+     *
+     * @param array $plugins
+     *            Set of existing plugins.
+     * @return array $plugins New set.
+     */
+    public function exclude_plugins($plugins)
+    {
+        if (! is_array($plugins) || empty($plugins)) {
+            return $plugins;
+        }
+        
+        if (! defined('DOING_AJAX') || ! DOING_AJAX) {
+            return $plugins;
+        }
+        
+        unset($plugins['ajax-optimizer/ajax-optimizer.php']);
+        $action_id = isset($_REQUEST['action']) ? $_REQUEST['action'] : '_default';
+        return $this->apply_action($action_id, $plugins);
+    }
 
-		if ( ! function_exists( 'is_plugin_inactive' ) ) {
-			require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
-		}
+    /**
+     * removes all the disabled plugins for the action specified with action_id
+     * @param array $action
+     * @return array the plugins_to_disable array for chaining
+     */
+    private function apply_action($action_id, &$all_plugins)
+    {
+        if (isset($this->buffered_results[$action_id])){
+            return $this->buffered_results[$action_id];
+        }
+            
+        $action = (array) get_option('ajax-optimizer_' . $action_id, array());
+        if (! $action) {
+            if ($action_id === '_default'){
+                return $all_plugins;
+            }
+            return $this->apply_action('_default', $all_plugins);
 
-		return is_plugin_active( $plugin );
-	}
+//             return $all_plugins;
+        }
+        
+        $plugins_to_disable = array();
+        if (isset($action['plugins'])) {
+            $plugin_options = $action['plugins'];
+            foreach ($all_plugins as $plugin_path){
+                if (isset ($plugin_options[$plugin_path])){
+                    $opts = $plugin_options[$plugin_path];
+                    if ($opts && isset($opts['status'])) 
+                        $option_status = $opts['status'];
+                }
+                if (! $option_status || $option_status === ''){
+                    if ($action_id === '_default'){
+                        $option_status = 'active';
+                    }
+                    else{
+                        $option_status = 'inactive';
+                    }
+                }
+                if ($option_status === 'inactive') {
+                    $plugins_to_disable[$plugin_path] = true;
+                }
+            }
+        }
+        foreach ($all_plugins as $key => $path) {
+            if (isset($plugins_to_disable[$path])) {
+                unset($all_plugins[$key]);
+            }
+        }
+        $this->buffered_results[$action_id] = $all_plugins;
+        return $all_plugins;
+    }
 
-	/**
-	 * Exclude plugins.
-	 *
-	 * @param array $plugins Set of existing plugins.
-	 * @return array $plugins New set.
-	 */
-	public function exclude_plugins( $plugins ) {
-		if ( ! is_array( $plugins ) || empty( $plugins ) ) {
-			return $plugins;
-		}
-
-		if ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) {
-			return $plugins;
-		}
-
-
-		if ( ! $this->is_frontend_request() ) {
-			return $plugins;
-		}
-
-		$options = (array) get_option( 'ajax-optimizer', array() );
-		
-		// get current action
-		$current_action = isset( $_REQUEST['action'] ) ? $_REQUEST['action'] : 'default';
-		
-		if ( ! isset( $options['plugins']['frontend'] ) || ! is_array( $options['plugins']['frontend'] ) ) {
-			return $plugins;
-		}
-		
-		// use "default" if current action has no own settings
-		if( !isset( $options['plugins']['frontend'][$current_action] ) || ! is_array( $options['plugins']['frontend'][$current_action] ) ){
-			if( isset( $options['plugins']['frontend']['default'] ) ){
-				$disabled_plugins = $options['plugins']['frontend']['default'];
-			} else {
-				return $plugins;
-			}
-		} else {
-			$disabled_plugins = $options['plugins']['frontend'][$current_action];
-		}
-
-		// Blog-active plugins.
-		if ( 'option_active_plugins' === current_filter() ) {
-			foreach ( $plugins as $_key => $_name ) {
-				if ( isset( $disabled_plugins[ $_name ] ) ) {
-					unset( $plugins[ $_key ] );
-				}
-			}
-		} else {
-			// Network-active plugins.
-			foreach ( $plugins as $_name  => $timestamp ) {
-				if ( isset( $disabled_plugins[ $_name ] ) ) {
-					unset( $plugins[ $_name ] );
-				}
-			}
-		}
-
-		return $plugins;
-	}
-
-	/**
-	 * Determines whether the AJAX request was initiated by the frontend.
-	 *
-	 * @return bool
-	 */
-	private function is_frontend_request() {
-		$script_filename = isset( $_SERVER['SCRIPT_FILENAME'] ) ? basename( $_SERVER['SCRIPT_FILENAME'] ) : '';
-		$referer = '';
-
-		if ( ! empty( $_REQUEST['_wp_http_referer'] ) ) {
-			$referer = wp_unslash( $_REQUEST['_wp_http_referer'] );
-		} elseif ( ! empty( $_SERVER['HTTP_REFERER'] ) ) {
-			$referer = wp_unslash( $_SERVER['HTTP_REFERER'] );
-		}
-
-		$result = ( false === strpos( $referer, admin_url() ) ) && 'admin-ajax.php' === $script_filename;
-
-		return $result;
-	}
+    /**
+     * Determines whether the AJAX request was initiated by the frontend.
+     *
+     * @return bool
+     */
+    private function is_frontend_request()
+    {
+        $script_filename = isset($_SERVER['SCRIPT_FILENAME']) ? basename($_SERVER['SCRIPT_FILENAME']) : '';
+        $referer = '';
+        
+        if (! empty($_REQUEST['_wp_http_referer'])) {
+            $referer = wp_unslash($_REQUEST['_wp_http_referer']);
+        } elseif (! empty($_SERVER['HTTP_REFERER'])) {
+            $referer = wp_unslash($_SERVER['HTTP_REFERER']);
+        }
+        
+        $result = (false === strpos($referer, admin_url())) && 'admin-ajax.php' === $script_filename;
+        
+        return $result;
+    }
 }
 
 new AJAX_Optimizer_MU_Plugin();

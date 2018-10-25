@@ -27,7 +27,6 @@ class AJAX_Optimizer_Admin {
 	 */
 	public function __construct() {
 		$this->plugin = AJAX_Optimizer::get_instance();
-
 		// Add menu items.
 		add_action( 'admin_menu', array( $this, 'add_menu_page' ) );
 		// Settings page.
@@ -76,9 +75,6 @@ class AJAX_Optimizer_Admin {
 		// Get settings page hook.
 		$hook = $this->plugin_screen_hook_suffix;
 
-		// Register settings.
-		register_setting( AJAX_OPT_SLUG, AJAX_OPT_SLUG, array( $this, 'sanitize_settings' ) );
-
 		// Must Use plugin settings section.
 		add_settings_section(
 			'plugin_conflicts_setting_section',
@@ -87,23 +83,65 @@ class AJAX_Optimizer_Admin {
 			$hook
 		);
 
-		// Choose plugins.
+		// The globally valid settings
+		$settings_id = AJAX_OPT_SLUG . '_settings';
+		$field_id = $settings_id . '_field';
 		add_settings_section(
-			'plugins',
-			__( 'Disable Plugins', 'ajax-optimizer' ),
-			array( $this, 'render_settings_plugins' ),
-			$hook
-		);
+		    $settings_id,
+		    __( 'AJAX Optimizer Settings', 'ajax-optimizer' ),
+		    array( $this, 'render_settings_global' ),
+		    $hook
+		    );
+		add_settings_field(
+		    $field_id,
+		    null,
+		    array( $this, 'render_void'),
+		    $hook,
+		    $settings_id);
+		register_setting(AJAX_OPT_SLUG, $settings_id, array( $this, 'sanitize_settings_global' ));
+		
+		// Settings per action
+		$supported_actions = $this->plugin->get_supported_actions();
+		foreach ($supported_actions as $action_id => $action){
+		    $settings_id = AJAX_OPT_SLUG . '_' . $action_id;
+		    $field_id = $settings_id . '_field';
+		    $title = isset($action['name']) ? $action['name'] : $action_id;//__( 'Disable Plugins By Action', 'ajax-optimizer' );
+		    // The new action based settings
+		    add_settings_section(
+		        $settings_id,
+		        $title,
+		        array( $this, 'render_settings_actions'),
+		        $hook
+		        );
+		    
+		    add_settings_field(
+		        $field_id, 
+		        null, 
+		        array( $this, 'render_void'),
+		        $hook, 
+		        $settings_id);
+		    register_setting(AJAX_OPT_SLUG, $settings_id, array( $this, 'sanitize_settings_action' ));
+		}
 	}
 
 	/**
-	 * Sanitize settings.
+	 * Sanitize settings for actions.
 	 *
 	 * @param arr $settings Unsanitized settings.
 	 * @return arr $settings Sanitized settings.
 	 */
-	public function sanitize_settings( $settings ) {
+	public function sanitize_settings_action( $settings ) {
 		return $settings;
+	}
+	
+	/**
+	 * Sanitize global settings
+	 *
+	 * @param arr $settings Unsanitized settings.
+	 * @return arr $settings Sanitized settings.
+	 */
+	public function sanitize_settings_global( $settings ) {
+	    return $settings;
 	}
 
 	/**
@@ -118,29 +156,75 @@ class AJAX_Optimizer_Admin {
 	}
 
 	/**
-	 * Render setting to select plugins.
+	 * Render the settings to pick plugins to exclude for specific actions
 	 */
-	public function render_settings_plugins() {
-		$options = $this->plugin->options();
-
-		if ( isset( $options['plugins']['frontend']['default'] ) && is_array( $options['plugins']['frontend']['default'] ) ) {
-			$plugins = $options['plugins']['frontend']['default'];
-		} else {
-			$plugins = array();
-		}
-
-		$all_plugins = get_plugins();
-		unset( $all_plugins[ AJAX_OPT_BASE_NAME ] );
-
-		// Load the template.
-		require_once AJAX_OPT_BASE_PATH . 'admin/views/settings-plugins.php';
+	public function render_settings_global() {
+	    $all_plugins = get_plugins();
+	    unset( $all_plugins[ AJAX_OPT_BASE_NAME ] );
+	    $all_plugin_paths = [];
+	    foreach ($all_plugins as $plugin_path => $plugin){
+	        $all_plugin_paths[] = $plugin_path;
+	    }
+	    
+	    $supported_actions = $this->plugin->get_supported_actions();
+	    $action_ids = [];
+	    $recs = [];
+	    foreach ($supported_actions as $action_id => $action){
+	        $action_ids[] = $action_id;
+	        $recommendations = isset($action['recommendations']) ? $action['recommendations'] : array();
+	        $recs_for_action = array();
+	        foreach ($recommendations as $plugin_id => $r){
+	            $status = isset($r['status']) ? $r['status'] :
+	                       $plugin_id === '_default' ? 'active' : 'inactive';
+                $recs_for_action[$plugin_id] = $status;
+	        }
+	        $recs[$action_id] = $recs_for_action;
+	    }
+	    // Load the template.
+	    require_once AJAX_OPT_BASE_PATH . 'admin/views/settings-global.php';
 	}
+	
+	
+	public function render_void() {
+	    
+	}
+	/**
+	 * Render the settings to pick plugins to exclude for specific actions
+	 */
+	public function render_settings_actions($arr) {
+	    $action_id = substr($arr['id'], 15);
+	    $options = $this->plugin->get_action_option($action_id);
+	    
+	    $supported_actions = $this->plugin->get_supported_actions();
+	    $action = $supported_actions[$action_id];
+	    
+	    $recommendations = isset($action['recommendations']) ? $action['recommendations'] : array();
 
+	    $targetOption = $options; 
+	    $all_plugins = get_plugins();
+	    unset( $all_plugins[ AJAX_OPT_BASE_NAME ] );
+	    
+	    // Load the template.
+	    require AJAX_OPT_BASE_PATH . 'admin/views/settings-actions.php';
+	}
+	
+	
 	/**
 	 * Register and enqueue admin-specific scripts.
 	 */
 	public function enqueue_admin_scripts() {
-		wp_enqueue_script( AJAX_OPT_SLUG . '-admin-script', AJAX_OPT_BASE_URL . 'admin/assets/admin.js', array() );
+	    $handle = AJAX_OPT_SLUG . '-admin-script';
+	    $translation = array(
+	        'disable_mu' => __( 'Disable Optimizer', AJAX_OPT_SLUG),
+	        'enable_mu' => __( 'Activate Optimizer', AJAX_OPT_SLUG ),
+	        'enable_mu2' => __( 'Yes, I want to activate the optimzer.', AJAX_OPT_SLUG ),
+	        'enable_mu_confirm_title' => __( 'Confirm the activation of the optimizer.', AJAX_OPT_SLUG ),
+	        'enable_mu_confirm_text' => __( 'TODO: Add some text', AJAX_OPT_SLUG ),
+	        'enable_mu_checkbox' => __( 'I undestand the risks and know what I am doing.', AJAX_OPT_SLUG ),
+	    );
+	    wp_register_script( $handle, AJAX_OPT_BASE_URL . 'admin/assets/admin.js' );
+	    wp_localize_script( $handle, 'ajax_optimizer_translation', $translation );
+	    wp_enqueue_script($handle);
 	}
 
 }

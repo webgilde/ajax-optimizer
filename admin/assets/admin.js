@@ -1,13 +1,46 @@
 jQuery( document ).ready( function( $ ) {
-	$( '#ajax_optimizer_create_mu_plugin, #ajax_optimizer_delete_mu_plugin' ).click( function( event ) {
+	jQuery( '#ajax_optimizer_create_mu_plugin, #ajax_optimizer_delete_mu_plugin' ).click( function( event ) {
 		event.preventDefault();
-
-		var $loading = $( '#ajax-optimizer-create-mu-plugin-loading' ).show(),
-		    $status = $( '#ajax-optimizer-mu-plugin-status' ).hide();
-		    $that = $( this );
-
+		var $that = jQuery( this );
+		var $status = jQuery( '#ajax-optimizer-mu-plugin-status' ).hide();
+		var is_activate_button = this.id == 'ajax_optimizer_create_mu_plugin';
+		if (is_activate_button) {
+			var div = jQuery( '#ajax_optimizer_create_mu_plugin_confirm' );
+			if (! div.is(":visible")){
+				div.show();
+				jQuery( '#ajax_optimizer_create_mu_plugin_div' ).addClass('highlight');
+			}
+			var checkbox = jQuery( '#ajax_optimizer_create_mu_plugin_cb' );
+			var checked = ( checkbox && checkbox.length ) ? jQuery( '#ajax_optimizer_create_mu_plugin_cb' )[0].checked : false;
+			if (! checked){
+				var p = jQuery('<p/>');
+				var title= jQuery('<strong/>').text(ajax_optimizer_translation.enable_mu_confirm_title);
+				var text = jQuery('<p/>').text(ajax_optimizer_translation.enable_mu_confirm_text);
+				checkbox = jQuery('<input type="checkbox" id="ajax_optimizer_create_mu_plugin_cb"/>').change( function (event) {
+					jQuery('#ajax_optimizer_create_mu_plugin').prop('disabled', ! this.checked);
+					var btn = jQuery('#ajax_optimizer_create_mu_plugin');
+					if (this.checked) btn.addClass('button-primary');
+					else btn.removeClass('button-primary');
+				});
+				var label = jQuery('<label for="ajax_optimizer_create_mu_plugin_cb">').text(ajax_optimizer_translation.enable_mu_checkbox);
+				p.append(title).append(text).append(checkbox).append(label);
+				$status.html('').append(p).removeClass().addClass( 'error' ).show();
+				$that.text(ajax_optimizer_translation.enable_mu2);
+				jQuery(this).prop('disabled', ! checked);
+				return;
+			}
+			else{
+				$that.text(ajax_optimizer_translation.enable_mu);
+				jQuery( '#ajax_optimizer_create_mu_plugin_div' ).removeClass('highlight');
+				jQuery( '#ajax_optimizer_create_mu_plugin_cb' )[0].checked = false;
+				div.hide();
+			}
+		}
+		var $loading = jQuery( '#ajax-optimizer-create-mu-plugin-loading' ).show();
+		$that.removeClass('button-primary')
+		
 		// Hide both buttons.
-		$that.hide().siblings().hide();
+	    jQuery( '#ajax_optimizer_create_mu_plugin, #ajax_optimizer_delete_mu_plugin' ).hide();
 
 		ajax_optimizer_admin.filesystem.ajax( {
 			data: {
@@ -23,7 +56,8 @@ jQuery( document ).ready( function( $ ) {
 
 					if ( data.success ) {
 						// Show other button.
-						$that.siblings().show();
+						if (is_activate_button) jQuery( '#ajax_optimizer_delete_mu_plugin ').show();
+						else jQuery( '#ajax_optimizer_create_mu_plugin ').show();
 					} else {
 						$that.show();
 					}
@@ -41,11 +75,13 @@ jQuery( document ).ready( function( $ ) {
 			}
 		} );
 	} );
-
-	// Toggle row class.
-	$( 'input[name^="ajax-optimizer[plugins]"]' ).on( 'change', function () {
-		$( this ).parents( 'tr' ).toggleClass( 'active inactive' );
+	
+	jQuery('#ajax_optimizer_save_unrecommended_cb').change(function(event){
+		jQuery('#ajax_optimizer_submit_settings').prop('disabled', ! this.checked);
 	});
+	//  check if the page is displayed.
+	if (jQuery('#ajax_optimizer_save_unrecommended_cb').length > 0)
+		ajax_optimizer_admin.check_for_recommended_settings();
 });
 
 window.ajax_optimizer_admin = window.ajax_optimizer_admin || {};
@@ -136,4 +172,67 @@ ajax_optimizer_admin.filesystem = {
 			request.fail( args.fail );
 		}
 	}
+}
+
+
+ajax_optimizer_admin.set_checked = function(elm, preventCheckForRecommendedSettings){
+	var input = document.getElementById('ajax_optimizer_status_' + elm.id);
+	var classNew = elm.checked ? 'active' : 'inactive';
+	var classOld = elm.checked ? 'inactive' : 'active';
+	if (input) input.value = classNew;
+	jQuery( elm ).parents( 'tr' ).removeClass(classOld);
+	jQuery( elm ).parents( 'tr' ).addClass(classNew);
+	
+	if (! preventCheckForRecommendedSettings)
+		ajax_optimizer_admin.check_for_recommended_settings();
+}
+
+ajax_optimizer_admin.get_recommended_status = function(action_id, plugin_path){
+	var recs = ajax_optimizer_admin.recommendations[action_id];
+	if (recs){
+		if (recs[plugin_path]){
+			return recs[plugin_path];
+		}
+		else{
+			if (action_id == '_default') return 'active';
+			return 'inactive';
+		}
+	}
+	return 'active';
+}
+
+ajax_optimizer_admin.set_to_default = function(action_id){
+	var recs = ajax_optimizer_admin.recommendations[action_id];
+	for (var i in ajax_optimizer_admin.plugin_paths){
+		var path = ajax_optimizer_admin.plugin_paths[i];
+		var elm = document.getElementById('ajax_optimizer_' + action_id + '_' + path);
+		var rec_status = ajax_optimizer_admin.get_recommended_status(action_id, path);
+		var checked = rec_status == 'active';
+		elm.checked = checked;
+		ajax_optimizer_admin.set_checked(elm, true);
+	}
+	ajax_optimizer_admin.check_for_recommended_settings();
+}
+
+ajax_optimizer_admin.check_for_recommended_settings = function(){
+	jQuery('#ajax_optimizer_save_unrecommended_cb')[0].checked = false;
+	var unrecommended_count = 0;
+	for (var i in ajax_optimizer_admin.action_ids){
+		var action_id = ajax_optimizer_admin.action_ids[i];
+		
+		for (var j in ajax_optimizer_admin.plugin_paths){
+			var path = ajax_optimizer_admin.plugin_paths[j];
+			var cb = document.getElementById('ajax_optimizer_' + action_id + '_' + path);
+			var rec_status = ajax_optimizer_admin.get_recommended_status(action_id, path);
+			var checked = rec_status == 'active';
+			if (checked != cb.checked){
+				unrecommended_count++;
+			}
+		}
+	}
+	
+	if (unrecommended_count > 0) jQuery('#ajax_optimizer_save_unrecommended_notice').show();
+	else jQuery('#ajax_optimizer_save_unrecommended_notice').hide();
+	jQuery('#ajax_optimizer_submit_settings').prop('disabled', unrecommended_count > 0);
+	
 }

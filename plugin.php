@@ -10,18 +10,29 @@ class AJAX_Optimizer {
 	 */
 	protected static $instance;
 
-	/**
-	 * Plugin options.
-	 *
-	 * @var     array (if loaded)
-	 */
-	protected $options;
+// 	/**
+// 	 * Plugin options.
+// 	 *
+// 	 * @var     array (if loaded)
+// 	 */
+// 	protected $options;
+
+	protected $global_options;
+	protected $action_options = array();
+	
 
 	/**
 	 * Constructor.
 	 */
 	private function __construct() {
 		$this->load_plugin_textdomain();
+		add_filter( AJAX_OPT_ACTIONS_FILTER, array($this, 'addDefaultAction') );
+	}
+	
+	public function addDefaultAction($arr){
+	    if (!$arr) $arr = array();
+	    $arr['_default'] = array('name' => 'Default Settings', 'description' => 'The default behaviour. This will be completely overriden by the custom actions.');
+	    return $arr;
 	}
 
 	/**
@@ -50,13 +61,20 @@ class AJAX_Optimizer {
 	 *
 	 * @return array $options
 	 */
-	public function options() {
-		if ( ! isset( $this->options ) ) {
-			$this->options = (array) get_option( AJAX_OPT_SLUG, array() );
-		}
-
-		return $this->options;
+// 	public function options() {
+// 		if ( ! isset( $this->options ) ) {
+// 			$this->options = (array) get_option( AJAX_OPT_SLUG, array() );
+// 		}
+// 		return $this->options;
+// 	}
+	public function get_action_option($action_id){
+	    if (! isset($this->action_options[$action_id])){
+	        //  try to load the options
+	        $this->action_options[$action_id] = (array) get_option( AJAX_OPT_SLUG . "_" . $action_id, array() );
+	    }
+	    return $this->action_options[$action_id];
 	}
+
 
 	/**
 	 * Update plugin options.
@@ -66,6 +84,25 @@ class AJAX_Optimizer {
 	public function update_options( array $options ) {
 		$this->options = $options;
 		update_option( AJAX_OPT_SLUG, $options );
+	}
+	
+	public function get_supported_actions(){
+	    if (! isset($this->supported_actions)){
+	        $this->supported_actions = apply_filters(AJAX_OPT_ACTIONS_FILTER, array());
+	        ksort($this->supported_actions);
+// 	        echo "TODO HANDLE THIS";
+// 	        $options = $this->options();
+// 	        $actions = isset($options['actions']) ? $options['actions'] : array();
+// 	        foreach ($this->supported_actions as $action_id => $supported_action){
+// 	            if (! isset($actions[$action_id])){
+// 	                $actions[$action_id] = array();
+// 	            }
+// 	        }
+// 	        $options['actions'] = $actions;
+// 	        $this->options = $options;
+// 	        ksort($this->options['actions']);
+	    }
+	    return $this->supported_actions;
 	}
 
 	/**
